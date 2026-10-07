@@ -2,7 +2,7 @@
  * Binary Save Reader for NDS Save Files
  */
 
-// Gen 4 HeartGold / SoulSilver Character Map
+// Gen 4 Character Table Mapping
 const GEN4_CHAR_MAP = {
   // Numbers
   0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
@@ -49,14 +49,13 @@ class SaveReader {
   }
 
   /**
-   * Decodes Gen 4 character encoding using precise table lookups
+   * Decodes Gen 4 string up to max characters
    */
   getString(offset, maxChars = 8) {
     let result = '';
     for (let i = 0; i < maxChars; i++) {
       const charCode = this.getUint16(offset + (i * 2));
       
-      // End-of-string terminators
       if (charCode === 0xFFFF || charCode === 0x0000) break;
 
       if (GEN4_CHAR_MAP[charCode] !== undefined) {
@@ -131,5 +130,24 @@ class SaveReader {
       sid: this.getUint16(SID_OFFSET),
       money: this.getUint32(MONEY_OFFSET)
     };
+  }
+
+  /**
+   * Debug method: Logs hex dump of the first 256 bytes of the active block
+   */
+  debugTrainerBlock(baseOffset) {
+    console.log("=== BEGIN HEX DUMP OF ACTIVE BLOCK (256 BYTES) ===");
+    const bytes = [];
+    for (let i = 0; i < 256; i++) {
+      const b = this.getUint8(baseOffset + i);
+      bytes.push(b.toString(16).padStart(2, '0'));
+    }
+    
+    for (let row = 0; row < 16; row++) {
+      const offsetHex = (baseOffset + row * 16).toString(16).padStart(5, '0');
+      const rowBytes = bytes.slice(row * 16, row * 16 + 16).join(' ');
+      console.log(`0x${offsetHex}: ${rowBytes}`);
+    }
+    console.log("==================================================");
   }
 }

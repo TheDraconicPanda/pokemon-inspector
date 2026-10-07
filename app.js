@@ -45,9 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function processSaveFile(arrayBuffer) {
     const saveReader = new SaveReader(arrayBuffer);
     const header = saveReader.parseHeader();
+    
+    // Print hex dump to browser Developer Console (F12)
+    saveReader.debugTrainerBlock(header.activeBlockOffset);
+
     const trainer = saveReader.parseTrainerInfo(header.activeBlockOffset);
 
-    // Format IDs with leading zeros (5 digits)
     const formattedTID = String(trainer.tid).padStart(5, '0');
     const formattedSID = String(trainer.sid).padStart(5, '0');
     const formattedMoney = trainer.money.toLocaleString();
