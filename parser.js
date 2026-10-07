@@ -1,58 +1,71 @@
 /**
-     * SaveReader Class
-     * Standardized binary wrapper over DataView with Gen 4 helpers.
-     */
-    class SaveReader {
-      constructor(arrayBuffer) {
-        this.buffer = arrayBuffer;
-        this.view = new DataView(arrayBuffer);
-        this.byteLength = arrayBuffer.byteLength;
-      }
+ * Binary Save Reader for NDS Save Files
+ */
+class SaveReader {
+  constructor(arrayBuffer) {
+    this.buffer = arrayBuffer;
+    this.view = new DataView(arrayBuffer);
+    this.byteLength = arrayBuffer.byteLength;
+  }
 
-      getUint8(offset) {
-        return this.view.getUint8(offset);
-      }
+  getUint8(offset) {
+    return this.view.getUint8(offset);
+  }
 
-      getUint16(offset, littleEndian = true) {
-        return this.view.getUint16(offset, littleEndian);
-      }
+  getUint16(offset) {
+    return this.view.getUint16(offset, true); // Little-Endian
+  }
 
-      getUint32(offset, littleEndian = true) {
-        return this.view.getUint32(offset, littleEndian);
-      }
+  getUint32(offset) {
+    return this.view.getUint32(offset, true); // Little-Endian
+  }
 
-      getBytes(offset, length) {
-        return new Uint8Array(this.buffer, offset, length);
-      }
+  /**
+   * Determines active Gen 4 save block (Block A or Block B) based on Save Counter
+   * @returns {Object} Block metadata
+   */
+  getGen4ActiveBlock() {
+    // HeartGold / SoulSilver Footer Offsets
+    const BLOCK_A_FOOTER = 0xC0F0;
+    const BLOCK_B_FOOTER = 0x4C0F0;
 
-      /**
-       * Decodes Gen 4 Character Sets (DPPt/HGSS character table)
-       */
-      getGen4String(offset, maxLength = 16) {
-        let result = '';
-        for (let i = 0; i < maxLength; i++) {
-          const charCode = this.getUint16(offset + i * 2, true);
-          
-          // String terminator codes in Gen 4
-          if (charCode === 0xFFFF || charCode === 0x0000) break;
+    const countA = this.getUint32(BLOCK_A_FOOTER);
+    const countB = this.getUint32(BLOCK_B_FOOTER);
 
-          // Mapping standard Gen 4 English Character Table
-          if (charCode >= 0x0101 && charCode <= 0x010A) {
-            // Digits '0'-'9'
-            result += String.fromCharCode(charCode - 0x0101 + 48);
-          } else if (charCode >= 0x0121 && charCode <= 0x013A) {
-            // Uppercase 'A'-'Z'
-            result += String.fromCharCode(charCode - 0x0121 + 65);
-          } else if (charCode >= 0x013B && charCode <= 0x0154) {
-            // Lowercase 'a'-'z'
-            result += String.fromCharCode(charCode - 0x013B + 97);
-          } else if (charCode === 0x0000) {
-            result += ' ';
-          } else {
-            // Placeholder for special/unmapped characters
-            result += '?';
-          }
-        }
-        return result;
-      }
+    if (countB > countA) {
+      return {
+        activeBlockOffset: 0x40000,
+        saveCount: countB,
+        blockName: 'Block B (Secondary)'
+      };
     }
+
+    return {
+      activeBlockOffset: 0x00000,
+      saveCount: countA,
+      blockName: 'Block A (Primary)'
+    };
+  }
+
+  /**
+   * Parses save file header and verifies file size
+   * @returns {Object} Header details
+   */
+  parseHeader() {
+    const NDS_SAV_SIZE = 524288; // 512KB
+    
+    if (this.byteLength < NDS_SAV_SIZE) {
+      throw new Error(`Invalid file size: ${this.byteLength} bytes. Expected at least 512KB.`);
+    }
+
+    const blockInfo = this.getGen4ActiveBlock();
+
+    return {
+      fileSizeKB: Math.floor(this.byteLength / 1024),
+      isDsv: this.byteLength > NDS_SAV_SIZE,
+      activeBlockOffset: blockInfo.activeBlockOffset,
+      saveCount: blockInfo.saveCount,
+      activeBlockName: blockInfo.blockName
+    };
+  }
+}
