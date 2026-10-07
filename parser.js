@@ -124,6 +124,13 @@ class SaveReader {
     const SID_OFFSET = baseOffset + 0x0076;
     const MONEY_OFFSET = baseOffset + 0x0078;
 
+    // Direct byte logging for character code verification
+    const rawNameCodes = [];
+    for (let i = 0; i < 8; i++) {
+      rawNameCodes.push('0x' + this.getUint16(TRAINER_NAME_OFFSET + (i * 2)).toString(16).toUpperCase().padStart(4, '0'));
+    }
+    console.log("Raw Name Char Codes at 0x0064:", rawNameCodes);
+
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
       tid: this.getUint16(TID_OFFSET),
