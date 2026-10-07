@@ -2,32 +2,43 @@
  * Binary Save Reader for NDS Save Files
  */
 
-// Gen 4 Character Encoding Map (HeartGold / SoulSilver)
-const GEN4_CHAR_MAP = {
-  // Digits
-  0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
-  0x0113: '5', 0x0114: '6', 0x0115: '7', 0x0116: '8', 0x0117: '9',
+// Full Gen 4 Character Encoding Mapping (English / Standard NDS)
+function decodeGen4Char(charCode) {
+  // End of string or null
+  if (charCode === 0xFFFF || charCode === 0x0000) return null;
 
-  // Uppercase Letters
-  0x0121: 'A', 0x0122: 'B', 0x0123: 'C', 0x0124: 'D', 0x0125: 'E',
-  0x0126: 'F', 0x0127: 'G', 0x0128: 'H', 0x0129: 'I', 0x012A: 'J',
-  0x012B: 'K', 0x012C: 'L', 0x012D: 'M', 0x012E: 'N', 0x012F: 'O',
-  0x0130: 'P', 0x0131: 'Q', 0x0132: 'R', 0x0133: 'S', 0x0134: 'T',
-  0x0135: 'U', 0x0136: 'V', 0x0137: 'W', 0x0138: 'X', 0x0139: 'Y',
-  0x013A: 'Z',
+  // Numbers 0-9
+  if (charCode >= 0x010E && charCode <= 0x0117) {
+    return String.fromCharCode(48 + (charCode - 0x010E));
+  }
 
-  // Lowercase Letters
-  0x013B: 'a', 0x013C: 'b', 0x013D: 'c', 0x013E: 'd', 0x013F: 'e',
-  0x0140: 'f', 0x0141: 'g', 0x0142: 'h', 0x0143: 'i', 0x0144: 'j',
-  0x0145: 'k', 0x0146: 'l', 0x0147: 'm', 0x0148: 'n', 0x0149: 'o',
-  0x014A: 'p', 0x014B: 'q', 0x014C: 'r', 0x014D: 's', 0x014E: 't',
-  0x014F: 'u', 0x0150: 'v', 0x0151: 'w', 0x0152: 'x', 0x0153: 'y',
-  0x0154: 'z',
+  // Uppercase A-Z (0x0121 is 'A')
+  if (charCode >= 0x0121 && charCode <= 0x013A) {
+    return String.fromCharCode(65 + (charCode - 0x0121));
+  }
 
-  // Symbols & Formatting
-  0x0000: '',  0x0001: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
-  0x01A8: '?', 0x01A9: '!', 0x01AA: '/', 0x01AB: '-', 0x01AC: '.'
-};
+  // Lowercase a-z (0x013B is 'a')
+  if (charCode >= 0x013B && charCode <= 0x0154) {
+    return String.fromCharCode(97 + (charCode - 0x013B));
+  }
+
+  // Space & Special Characters
+  if (charCode === 0x01A1 || charCode === 0x0001) return ' ';
+  if (charCode === 0x01A2) return '♂';
+  if (charCode === 0x01A3) return '♀';
+  if (charCode === 0x01A8) return '?';
+  if (charCode === 0x01A9) return '!';
+  if (charCode === 0x01AB) return '-';
+  if (charCode === 0x01AC) return '.';
+  if (charCode === 0x01AD) return '…';
+
+  // Direct ASCII fallback for codes under 128
+  if (charCode < 0x007F) {
+    return String.fromCharCode(charCode);
+  }
+
+  return '?'; // Unknown/Unsupported symbol
+}
 
 class SaveReader {
   constructor(arrayBuffer) {
@@ -49,24 +60,15 @@ class SaveReader {
   }
 
   /**
-   * Decodes Gen 4 character encoding using character map
+   * Decodes Gen 4 string up to max characters
    */
-  getString(offset, maxLengthBytes) {
+  getString(offset, maxChars = 8) {
     let result = '';
-    for (let i = 0; i < maxLengthBytes; i += 2) {
-      const charCode = this.getUint16(offset + i);
-      
-      // End-of-string terminators
-      if (charCode === 0xFFFF || charCode === 0x0000) break;
-
-      if (GEN4_CHAR_MAP[charCode] !== undefined) {
-        result += GEN4_CHAR_MAP[charCode];
-      } else if (charCode <= 0x007F) {
-        // Fallback ASCII
-        result += String.fromCharCode(charCode);
-      } else {
-        result += '?';
-      }
+    for (let i = 0; i < maxChars; i++) {
+      const charCode = this.getUint16(offset + (i * 2));
+      const char = decodeGen4Char(charCode);
+      if (char === null) break; // Terminate on 0xFFFF or 0x0000
+      result += char;
     }
     return result;
   }
@@ -97,7 +99,7 @@ class SaveReader {
   }
 
   /**
-   * Parses save file header
+   * Parses save file header details
    */
   parseHeader() {
     const NDS_SAV_SIZE = 524288; // 512KB
@@ -127,7 +129,7 @@ class SaveReader {
     const MONEY_OFFSET = baseOffset + 0x0078;
 
     return {
-      name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
+      name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
       tid: this.getUint16(TID_OFFSET),
       sid: this.getUint16(SID_OFFSET),
       money: this.getUint32(MONEY_OFFSET)
