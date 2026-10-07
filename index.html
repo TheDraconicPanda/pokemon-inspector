@@ -3,61 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pokémon Save Inspector (Gen 4)</title>
-  <!-- Link external CSS stylesheet -->
+  <title>Pokémon SoulSilver Save Inspector</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <div class="container">
-    <header>
-      <h1><span> PokéInspector</span></h1>
-      <p>Gen 4 Save Reader (SoulSilver / HeartGold)</p>
-    </header>
+    <h1>Pokémon SoulSilver Save Inspector</h1>
+    <p class="subtitle">Gen 4 (.sav / .dsv) Web Inspector</p>
 
     <!-- File Drop Zone -->
-    <div class="drop-zone" id="drop-zone">
-      <div class="drop-zone-icon">📁</div>
-      <div class="drop-zone-text">Click or drag & drop save file here</div>
-      <div class="drop-zone-subtext">Supports .sav and .dsv formats (512 KB)</div>
-      <input type="file" id="file-input" accept=".sav,.dsv">
-    </div>
-
-    <!-- Save File Info Header -->
-    <div class="card" id="file-info-card" style="display: none;">
-      <div class="card-title">
-        <span>📄 File Header Information</span>
-      </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">File Name</span>
-          <span class="info-value" id="meta-filename">-</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">File Size</span>
-          <span class="info-value" id="meta-filesize">-</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Format Type</span>
-          <span class="info-value" id="meta-format">-</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <span class="info-value" id="meta-status">-</span>
-        </div>
+    <div id="drop-zone" class="drop-zone">
+      <div class="drop-zone-content">
+        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p>Drag and drop your <strong>.sav</strong> or <strong>.dsv</strong> file here</p>
+        <p class="subtext">or</p>
+        <label for="file-input" class="btn">Select Save File</label>
+        <input type="file" id="file-input" accept=".sav,.dsv" hidden>
       </div>
     </div>
 
-    <!-- Diagnostic Reader Console -->
-    <div class="card">
-      <div class="card-title">
-        <span>💻 Binary Reader Output</span>
-      </div>
-      <div class="console-box" id="console-output">Awaiting file input...</div>
-    </div>
+    <!-- Parsed Output Results -->
+    <div id="output" class="output-container"></div>
   </div>
 
-  <!-- Load parser logic first, then UI application script -->
   <script src="parser.js"></script>
   <script src="app.js"></script>
 </body>
