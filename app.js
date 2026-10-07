@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = saveReader.parseHeader();
     const trainer = saveReader.parseTrainerInfo(header.activeBlockOffset);
 
-    // Format TID/SID with leading zeros (5 digits)
+    // Format IDs with leading zeros (5 digits)
     const formattedTID = String(trainer.tid).padStart(5, '0');
     const formattedSID = String(trainer.sid).padStart(5, '0');
     const formattedMoney = trainer.money.toLocaleString();
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card">
         <h3>Save File Details</h3>
         <ul>
-          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer)' : '.sav (Standard Raw)'}</span></li>
+          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer Detected)' : '.sav (Standard Raw)'}</span></li>
           <li><strong>Active Block:</strong> <span>${header.activeBlockName}</span></li>
           <li><strong>Save Counter:</strong> <span>${header.saveCount}</span></li>
         </ul>
