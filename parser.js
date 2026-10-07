@@ -116,13 +116,14 @@ class SaveReader {
   }
 
   /**
-   * Extracts Trainer Information from HG/SS save block
+   * Extracts Trainer Information from HG/SS active save block
    */
   parseTrainerInfo(baseOffset) {
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
-    const TID_OFFSET = baseOffset + 0x0074;
-    const SID_OFFSET = baseOffset + 0x0076;
-    const MONEY_OFFSET = baseOffset + 0x0078;
+    // Official HG/SS General Block Offsets
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0080;
+    const TID_OFFSET = baseOffset + 0x0090;
+    const SID_OFFSET = baseOffset + 0x0092;
+    const MONEY_OFFSET = baseOffset + 0x0094;
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
@@ -130,24 +131,5 @@ class SaveReader {
       sid: this.getUint16(SID_OFFSET),
       money: this.getUint32(MONEY_OFFSET)
     };
-  }
-
-  /**
-   * Debug method: Logs hex dump of the first 256 bytes of the active block
-   */
-  debugTrainerBlock(baseOffset) {
-    console.log("=== BEGIN HEX DUMP OF ACTIVE BLOCK (256 BYTES) ===");
-    const bytes = [];
-    for (let i = 0; i < 256; i++) {
-      const b = this.getUint8(baseOffset + i);
-      bytes.push(b.toString(16).padStart(2, '0'));
-    }
-    
-    for (let row = 0; row < 16; row++) {
-      const offsetHex = (baseOffset + row * 16).toString(16).padStart(5, '0');
-      const rowBytes = bytes.slice(row * 16, row * 16 + 16).join(' ');
-      console.log(`0x${offsetHex}: ${rowBytes}`);
-    }
-    console.log("==================================================");
   }
 }
