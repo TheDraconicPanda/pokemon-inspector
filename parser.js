@@ -2,43 +2,32 @@
  * Binary Save Reader for NDS Save Files
  */
 
-// Full Gen 4 Character Encoding Mapping (English / Standard NDS)
-function decodeGen4Char(charCode) {
-  // End of string or null
-  if (charCode === 0xFFFF || charCode === 0x0000) return null;
+// Gen 4 HeartGold / SoulSilver Character Map
+const GEN4_CHAR_MAP = {
+  // Numbers
+  0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
+  0x0113: '5', 0x0114: '6', 0x0115: '7', 0x0116: '8', 0x0117: '9',
 
-  // Numbers 0-9
-  if (charCode >= 0x010E && charCode <= 0x0117) {
-    return String.fromCharCode(48 + (charCode - 0x010E));
-  }
+  // Uppercase Letters A-Z
+  0x0121: 'A', 0x0122: 'B', 0x0123: 'C', 0x0124: 'D', 0x0125: 'E',
+  0x0126: 'F', 0x0127: 'G', 0x0128: 'H', 0x0129: 'I', 0x012A: 'J',
+  0x012B: 'K', 0x012C: 'L', 0x012E: 'M', 0x012F: 'N', 0x0130: 'O',
+  0x0131: 'P', 0x0132: 'Q', 0x0133: 'R', 0x0134: 'S', 0x0135: 'T',
+  0x0136: 'U', 0x0137: 'V', 0x0138: 'W', 0x0139: 'X', 0x013A: 'Y',
+  0x013B: 'Z',
 
-  // Uppercase A-Z (0x0121 is 'A')
-  if (charCode >= 0x0121 && charCode <= 0x013A) {
-    return String.fromCharCode(65 + (charCode - 0x0121));
-  }
+  // Lowercase Letters a-z
+  0x013C: 'a', 0x013D: 'b', 0x013E: 'c', 0x013F: 'd', 0x0140: 'e',
+  0x0141: 'f', 0x0142: 'g', 0x0143: 'h', 0x0144: 'i', 0x0145: 'j',
+  0x0146: 'k', 0x0147: 'l', 0x0148: 'm', 0x0149: 'n', 0x014A: 'o',
+  0x014B: 'p', 0x014C: 'q', 0x014D: 'r', 0x014E: 's', 0x014F: 't',
+  0x0150: 'u', 0x0151: 'v', 0x0152: 'w', 0x0153: 'x', 0x0154: 'y',
+  0x0155: 'z',
 
-  // Lowercase a-z (0x013B is 'a')
-  if (charCode >= 0x013B && charCode <= 0x0154) {
-    return String.fromCharCode(97 + (charCode - 0x013B));
-  }
-
-  // Space & Special Characters
-  if (charCode === 0x01A1 || charCode === 0x0001) return ' ';
-  if (charCode === 0x01A2) return '♂';
-  if (charCode === 0x01A3) return '♀';
-  if (charCode === 0x01A8) return '?';
-  if (charCode === 0x01A9) return '!';
-  if (charCode === 0x01AB) return '-';
-  if (charCode === 0x01AC) return '.';
-  if (charCode === 0x01AD) return '…';
-
-  // Direct ASCII fallback for codes under 128
-  if (charCode < 0x007F) {
-    return String.fromCharCode(charCode);
-  }
-
-  return '?'; // Unknown/Unsupported symbol
-}
+  // Special Characters
+  0x0000: '',  0x0001: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
+  0x01A8: '?', 0x01A9: '!', 0x01AB: '-', 0x01AC: '.', 0x01AD: '…'
+};
 
 class SaveReader {
   constructor(arrayBuffer) {
@@ -60,15 +49,23 @@ class SaveReader {
   }
 
   /**
-   * Decodes Gen 4 string up to max characters
+   * Decodes Gen 4 character encoding using precise table lookups
    */
   getString(offset, maxChars = 8) {
     let result = '';
     for (let i = 0; i < maxChars; i++) {
       const charCode = this.getUint16(offset + (i * 2));
-      const char = decodeGen4Char(charCode);
-      if (char === null) break; // Terminate on 0xFFFF or 0x0000
-      result += char;
+      
+      // End-of-string terminators
+      if (charCode === 0xFFFF || charCode === 0x0000) break;
+
+      if (GEN4_CHAR_MAP[charCode] !== undefined) {
+        result += GEN4_CHAR_MAP[charCode];
+      } else if (charCode <= 0x007F) {
+        result += String.fromCharCode(charCode);
+      } else {
+        result += '?';
+      }
     }
     return result;
   }
