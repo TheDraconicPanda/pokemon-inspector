@@ -116,14 +116,13 @@ class SaveReader {
   }
 
   /**
-   * Extracts Trainer Information from HG/SS active save block
+   * Extracts Trainer Information from save block
    */
   parseTrainerInfo(baseOffset) {
-    // Official HG/SS General Block Offsets
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0080;
-    const TID_OFFSET = baseOffset + 0x0090;
-    const SID_OFFSET = baseOffset + 0x0092;
-    const MONEY_OFFSET = baseOffset + 0x0094;
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    const TID_OFFSET = baseOffset + 0x0074;
+    const SID_OFFSET = baseOffset + 0x0076;
+    const MONEY_OFFSET = baseOffset + 0x0078;
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
