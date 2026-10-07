@@ -133,13 +133,13 @@ class SaveReader {
     }
 
     // Default offsets for TID, SID, Money
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0068;
     const TID_OFFSET = baseOffset + 0x0074;
     const SID_OFFSET = baseOffset + 0x0076;
     const MONEY_OFFSET = baseOffset + 0x0078;
 
     return {
-      name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
+      name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
       tid: this.getUint16(TID_OFFSET),
       sid: this.getUint16(SID_OFFSET),
       money: this.getUint32(MONEY_OFFSET)
