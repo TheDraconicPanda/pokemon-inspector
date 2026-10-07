@@ -118,18 +118,25 @@ class SaveReader {
   /**
    * Extracts Trainer Information from save block
    */
+  /**
+   * Extracts Trainer Information and scans for Trainer Name offset
+   */
   parseTrainerInfo(baseOffset) {
+    // 1. Scan for the character 'M' (0x012E) across the header block
+    console.log("=== SCANNING FOR TRAINER NAME 'Mando' ===");
+    for (let offset = 0x0000; offset < 0x0100; offset += 2) {
+      const code = this.getUint16(baseOffset + offset);
+      if (code === 0x012E) { // 0x012E = 'M'
+        const possibleName = this.getString(baseOffset + offset, 8);
+        console.log(`FOUND 'M' AT RELATIVE OFFSET 0x${offset.toString(16).toUpperCase().padStart(4, '0')} -> Decodes to: "${possibleName}"`);
+      }
+    }
+
+    // Default offsets for TID, SID, Money
     const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
     const TID_OFFSET = baseOffset + 0x0074;
     const SID_OFFSET = baseOffset + 0x0076;
     const MONEY_OFFSET = baseOffset + 0x0078;
-
-    // Direct byte logging for character code verification
-    const rawNameCodes = [];
-    for (let i = 0; i < 8; i++) {
-      rawNameCodes.push('0x' + this.getUint16(TRAINER_NAME_OFFSET + (i * 2)).toString(16).toUpperCase().padStart(4, '0'));
-    }
-    console.log("Raw Name Char Codes at 0x0064:", rawNameCodes);
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
