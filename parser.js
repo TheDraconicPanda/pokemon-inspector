@@ -21,26 +21,33 @@ class SaveReader {
   }
 
   /**
-   * Decodes Gen 4 character encoding (UTF-16 variant) into a readable JS String
+   * Decodes Gen 4 UTF-16 character encoding into a readable JS String
    */
   getString(offset, maxLengthBytes) {
     let result = '';
     for (let i = 0; i < maxLengthBytes; i += 2) {
       const charCode = this.getUint16(offset + i);
-      if (charCode === 0xFFFF || charCode === 0x0000) break; // String terminator
+      
+      // End-of-string terminators
+      if (charCode === 0xFFFF || charCode === 0x0000) break;
 
-      // Character mapping for Gen 4 (English/Standard)
+      // Gen 4 Character Table Mapping (English / Standard NDS)
       if (charCode >= 0x0121 && charCode <= 0x013A) {
-        // Upper case A-Z
+        // Uppercase A-Z (0x0121 maps to 'A' / 65)
         result += String.fromCharCode(charCode - 0x0121 + 65);
       } else if (charCode >= 0x013B && charCode <= 0x0154) {
-        // Lower case a-z
+        // Lowercase a-z (0x013B maps to 'a' / 97)
         result += String.fromCharCode(charCode - 0x013B + 97);
       } else if (charCode >= 0x010E && charCode <= 0x0117) {
-        // Numbers 0-9
+        // Digits 0-9 (0x010E maps to '0' / 48)
         result += String.fromCharCode(charCode - 0x010E + 48);
+      } else if (charCode === 0x0000 || charCode === 0x01A1) {
+        result += ' ';
+      } else if (charCode <= 0x007F) {
+        // Fallback standard ASCII
+        result += String.fromCharCode(charCode);
       } else {
-        result += '?'; // Fallback for special characters
+        result += '?';
       }
     }
     return result;
@@ -72,7 +79,7 @@ class SaveReader {
   }
 
   /**
-   * Parses save file header details
+   * Parses save file header
    */
   parseHeader() {
     const NDS_SAV_SIZE = 524288; // 512KB
@@ -93,13 +100,14 @@ class SaveReader {
   }
 
   /**
-   * Extracts Trainer Information from HeartGold / SoulSilver save structure
+   * Extracts Trainer Information from HG/SS save block
    */
   parseTrainerInfo(baseOffset) {
+    // Relative byte offsets for HG/SS Trainer Block
     const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
-    const TID_OFFSET = baseOffset + 0x0084;
-    const SID_OFFSET = baseOffset + 0x0086;
-    const MONEY_OFFSET = baseOffset + 0x0088;
+    const TID_OFFSET = baseOffset + 0x0074;
+    const SID_OFFSET = baseOffset + 0x0076;
+    const MONEY_OFFSET = baseOffset + 0x0078;
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
