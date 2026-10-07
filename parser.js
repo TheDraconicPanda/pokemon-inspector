@@ -27,9 +27,9 @@ class SaveReader {
     let result = '';
     for (let i = 0; i < maxLengthBytes; i += 2) {
       const charCode = this.getUint16(offset + i);
-      if (charCode === 0xFFFF || charCode === 0x0000) break; // End of string terminator
+      if (charCode === 0xFFFF || charCode === 0x0000) break; // String terminator
 
-      // Basic ASCII / English character mapping for Gen 4
+      // Character mapping for Gen 4 (English/Standard)
       if (charCode >= 0x0121 && charCode <= 0x013A) {
         // Upper case A-Z
         result += String.fromCharCode(charCode - 0x0121 + 65);
@@ -40,7 +40,7 @@ class SaveReader {
         // Numbers 0-9
         result += String.fromCharCode(charCode - 0x010E + 48);
       } else {
-        result += '?'; // Fallback character for unsupported symbols
+        result += '?'; // Fallback for special characters
       }
     }
     return result;
@@ -72,7 +72,7 @@ class SaveReader {
   }
 
   /**
-   * Parses save file header
+   * Parses save file header details
    */
   parseHeader() {
     const NDS_SAV_SIZE = 524288; // 512KB
@@ -93,10 +93,9 @@ class SaveReader {
   }
 
   /**
-   * Extracts Trainer Information from the active block
+   * Extracts Trainer Information from HeartGold / SoulSilver save structure
    */
   parseTrainerInfo(baseOffset) {
-    // Relative byte offsets for HG/SS Trainer Block
     const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
     const TID_OFFSET = baseOffset + 0x0084;
     const SID_OFFSET = baseOffset + 0x0086;
