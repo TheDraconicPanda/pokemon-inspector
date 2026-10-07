@@ -45,15 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
   function processSaveFile(arrayBuffer) {
     const saveReader = new SaveReader(arrayBuffer);
     const header = saveReader.parseHeader();
+    const trainer = saveReader.parseTrainerInfo(header.activeBlockOffset);
+
+    // Format TID/SID with leading zeros (5 digits)
+    const formattedTID = String(trainer.tid).padStart(5, '0');
+    const formattedSID = String(trainer.sid).padStart(5, '0');
+    const formattedMoney = trainer.money.toLocaleString();
 
     outputContainer.innerHTML = `
-      <div class="card">
-        <h3>Save File Header Details</h3>
+      <div class="card" style="margin-bottom: 16px;">
+        <h3>Trainer Information</h3>
         <ul>
-          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer Detected)' : '.sav (Standard NDS Raw)'}</span></li>
-          <li><strong>Total Size:</strong> <span>${header.fileSizeKB} KB</span></li>
-          <li><strong>Active Storage Block:</strong> <span>${header.activeBlockName}</span></li>
-          <li><strong>Active Block Offset:</strong> <span>0x${header.activeBlockOffset.toString(16).toUpperCase()}</span></li>
+          <li><strong>Trainer Name:</strong> <span>${trainer.name}</span></li>
+          <li><strong>Trainer ID (TID):</strong> <span>${formattedTID}</span></li>
+          <li><strong>Secret ID (SID):</strong> <span>${formattedSID}</span></li>
+          <li><strong>Money:</strong> <span>$${formattedMoney}</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Save File Details</h3>
+        <ul>
+          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer)' : '.sav (Standard Raw)'}</span></li>
+          <li><strong>Active Block:</strong> <span>${header.activeBlockName}</span></li>
           <li><strong>Save Counter:</strong> <span>${header.saveCount}</span></li>
         </ul>
       </div>
