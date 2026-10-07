@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Save Inspector (Gen 4)</title>
+  <!-- Link external CSS stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1><span> PokéInspector</span></h1>
+      <p>Gen 4 Save Reader (SoulSilver / HeartGold)</p>
+    </header>
+
+    <!-- File Drop Zone -->
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-zone-icon">📁</div>
+      <div class="drop-zone-text">Click or drag & drop save file here</div>
+      <div class="drop-zone-subtext">Supports .sav and .dsv formats (512 KB)</div>
+      <input type="file" id="file-input" accept=".sav,.dsv">
+    </div>
+
+    <!-- Save File Info Header -->
+    <div class="card" id="file-info-card" style="display: none;">
+      <div class="card-title">
+        <span>📄 File Header Information</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">File Name</span>
+          <span class="info-value" id="meta-filename">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">File Size</span>
+          <span class="info-value" id="meta-filesize">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Format Type</span>
+          <span class="info-value" id="meta-format">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Status</span>
+          <span class="info-value" id="meta-status">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diagnostic Reader Console -->
+    <div class="card">
+      <div class="card-title">
+        <span>💻 Binary Reader Output</span>
+      </div>
+      <div class="console-box" id="console-output">Awaiting file input...</div>
+    </div>
+  </div>
+
+  <!-- Load parser logic first, then UI application script -->
+  <script src="parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
