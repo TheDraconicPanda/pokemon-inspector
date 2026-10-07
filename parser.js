@@ -21,11 +21,35 @@ class SaveReader {
   }
 
   /**
+   * Decodes Gen 4 character encoding (UTF-16 variant) into a readable JS String
+   */
+  getString(offset, maxLengthBytes) {
+    let result = '';
+    for (let i = 0; i < maxLengthBytes; i += 2) {
+      const charCode = this.getUint16(offset + i);
+      if (charCode === 0xFFFF || charCode === 0x0000) break; // End of string terminator
+
+      // Basic ASCII / English character mapping for Gen 4
+      if (charCode >= 0x0121 && charCode <= 0x013A) {
+        // Upper case A-Z
+        result += String.fromCharCode(charCode - 0x0121 + 65);
+      } else if (charCode >= 0x013B && charCode <= 0x0154) {
+        // Lower case a-z
+        result += String.fromCharCode(charCode - 0x013B + 97);
+      } else if (charCode >= 0x010E && charCode <= 0x0117) {
+        // Numbers 0-9
+        result += String.fromCharCode(charCode - 0x010E + 48);
+      } else {
+        result += '?'; // Fallback character for unsupported symbols
+      }
+    }
+    return result;
+  }
+
+  /**
    * Determines active Gen 4 save block (Block A or Block B) based on Save Counter
-   * @returns {Object} Block metadata
    */
   getGen4ActiveBlock() {
-    // HeartGold / SoulSilver Footer Offsets
     const BLOCK_A_FOOTER = 0xC0F0;
     const BLOCK_B_FOOTER = 0x4C0F0;
 
@@ -48,8 +72,7 @@ class SaveReader {
   }
 
   /**
-   * Parses save file header and verifies file size
-   * @returns {Object} Header details
+   * Parses save file header
    */
   parseHeader() {
     const NDS_SAV_SIZE = 524288; // 512KB
@@ -66,6 +89,24 @@ class SaveReader {
       activeBlockOffset: blockInfo.activeBlockOffset,
       saveCount: blockInfo.saveCount,
       activeBlockName: blockInfo.blockName
+    };
+  }
+
+  /**
+   * Extracts Trainer Information from the active block
+   */
+  parseTrainerInfo(baseOffset) {
+    // Relative byte offsets for HG/SS Trainer Block
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    const TID_OFFSET = baseOffset + 0x0084;
+    const SID_OFFSET = baseOffset + 0x0086;
+    const MONEY_OFFSET = baseOffset + 0x0088;
+
+    return {
+      name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
+      tid: this.getUint16(TID_OFFSET),
+      sid: this.getUint16(SID_OFFSET),
+      money: this.getUint32(MONEY_OFFSET)
     };
   }
 }
