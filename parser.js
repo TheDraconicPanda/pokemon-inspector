@@ -133,7 +133,7 @@ class SaveReader {
     }
 
     // Default offsets for TID, SID, Money
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0068;
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
     const TID_OFFSET = baseOffset + 0x0074;
     const SID_OFFSET = baseOffset + 0x0076;
     const MONEY_OFFSET = baseOffset + 0x0078;
