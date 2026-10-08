@@ -2,31 +2,66 @@
  * Binary Save Reader for NDS Save Files
  */
 
-// PKHeX Gen 4 Character Table Mapping
+// Gen 4 Character Encoding Map (HeartGold / SoulSilver)
 const GEN4_CHAR_MAP = {
-  // Numbers (0x011B - 0x0124)
-  0x011B: '0', 0x011C: '1', 0x011D: '2', 0x011E: '3', 0x011F: '4',
-  0x0120: '5', 0x0121: '6', 0x0122: '7', 0x0123: '8', 0x0124: '9',
+  // Digits
+  0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
+  0x0113: '5', 0x0114: '6', 0x0115: '7', 0x0116: '8', 0x0117: '9',
 
-  // Uppercase Letters A-Z (0x012B - 0x0144)
-  0x012B: 'A', 0x012C: 'B', 0x012D: 'C', 0x012E: 'D', 0x012F: 'E',
-  0x0130: 'F', 0x0131: 'G', 0x0132: 'H', 0x0133: 'I', 0x0134: 'J',
-  0x0135: 'K', 0x0136: 'L', 0x0137: 'M', 0x0138: 'N', 0x0139: 'O',
-  0x013A: 'P', 0x013B: 'Q', 0x013C: 'R', 0x013D: 'S', 0x013E: 'T',
-  0x013F: 'U', 0x0140: 'V', 0x0141: 'W', 0x0142: 'X', 0x0143: 'Y',
-  0x0144: 'Z',
+  // Uppercase Letters
+  0x0121: 'A', 0x0122: 'B', 0x0123: 'C', 0x0124: 'D', 0x0125: 'E',
+  0x0126: 'F', 0x0127: 'G', 0x0128: 'H', 0x0129: 'I', 0x012A: 'J',
+  0x012B: 'K', 0x012C: 'L', 0x012D: 'M', 0x012E: 'N', 0x012F: 'O',
+  0x0130: 'P', 0x0131: 'Q', 0x0132: 'R', 0x0133: 'S', 0x0134: 'T',
+  0x0135: 'U', 0x0136: 'V', 0x0137: 'W', 0x0138: 'X', 0x0139: 'Y',
+  0x013A: 'Z',
 
-  // Lowercase Letters a-z (0x0145 - 0x015E)
-  0x0145: 'a', 0x0146: 'b', 0x0147: 'c', 0x0148: 'd', 0x0149: 'e',
-  0x014A: 'f', 0x014B: 'g', 0x014C: 'h', 0x014D: 'i', 0x014E: 'j',
-  0x014F: 'k', 0x0150: 'l', 0x0151: 'm', 0x0152: 'n', 0x0153: 'o',
-  0x0154: 'p', 0x0155: 'q', 0x0156: 'r', 0x0157: 's', 0x0158: 't',
-  0x0159: 'u', 0x015A: 'v', 0x015B: 'w', 0x015C: 'x', 0x015D: 'y',
-  0x015E: 'z',
+  // Lowercase Letters
+  0x013B: 'a', 0x013C: 'b', 0x013D: 'c', 0x013E: 'd', 0x013F: 'e',
+  0x0140: 'f', 0x0141: 'g', 0x0142: 'h', 0x0143: 'i', 0x0144: 'j',
+  0x0145: 'k', 0x0146: 'l', 0x0147: 'm', 0x0148: 'n', 0x0149: 'o',
+  0x014A: 'p', 0x014B: 'q', 0x014C: 'r', 0x014D: 's', 0x014E: 't',
+  0x014F: 'u', 0x0150: 'v', 0x0151: 'w', 0x0152: 'x', 0x0153: 'y',
+  0x0154: 'z',
 
-  // Special / Control Characters
-  0x0000: '',  0x0100: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
-  0x01A8: '?', 0x01A9: '!', 0x01AB: '-', 0x01AC: '.', 0x01AD: '…'
+  // Symbols & Formatting
+  0x0000: '',  0x0001: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
+  0x01A8: '?', 0x01A9: '!', 0x01AA: '/', 0x01AB: '-', 0x01AC: '.'
+};
+
+// Gen 4 Nature List
+const NATURES = [
+  "Hardy", "Lonely", "Brave", "Adamant", "Naughty",
+  "Bold", "Docile", "Relaxed", "Impish", "Lax",
+  "Timid", "Hasty", "Serious", "Jolly", "Naive",
+  "Modest", "Mild", "Quiet", "Bashful", "Rash",
+  "Calm", "Gentle", "Sassy", "Careful", "Quirky"
+];
+
+// Gen 1-4 Species Map (Selected/Common + Indexed)
+const SPECIES_NAMES = {
+  1: "Bulbasaur", 2: "Ivysaur", 3: "Venusaur", 4: "Charmander", 5: "Charmeleon", 6: "Charizard",
+  7: "Squirtle", 8: "Wartortle", 9: "Blastoise", 10: "Caterpie", 11: "Metapod", 12: "Butterfree",
+  16: "Pidgey", 19: "Rattata", 25: "Pikachu", 35: "Clefairy", 37: "Vulpix", 41: "Zubat",
+  43: "Oddish", 46: "Paras", 47: "Paras", 48: "Venonat", 50: "Diglett", 52: "Meowth", 54: "Psyduck",
+  60: "Poliwag", 63: "Abra", 66: "Machop", 72: "Tentacool", 74: "Geodude", 77: "Ponyta", 79: "Slowpoke",
+  81: "Magnemite", 83: "Farfetch'd", 84: "Doduo", 86: "Seel", 88: "Grimer", 90: "Shellder", 92: "Gastly",
+  95: "Onix", 96: "Drowzee", 98: "Krabby", 100: "Voltorb", 102: "Exeggcute", 104: "Cubone", 108: "Lickitung",
+  109: "Koffing", 111: "Rhyhorn", 113: "Chansey", 114: "Tangela", 115: "Kangaskhan", 116: "Horsea",
+  118: "Goldeen", 120: "Staryu", 122: "Mr. Mime", 123: "Scyther", 124: "Jynx", 125: "Electabuzz",
+  126: "Magmar", 127: "Pinsir", 128: "Tauros", 129: "Magikarp", 131: "Lapras", 132: "Ditto", 133: "Eevee",
+  138: "Omanyte", 140: "Kabuto", 142: "Aerodactyl", 143: "Snorlax", 144: "Articuno", 145: "Zapdos",
+  146: "Moltres", 147: "Dratini", 150: "Mewtwo", 151: "Mew", 152: "Chikorita", 155: "Cyndaquil",
+  158: "Totodile", 161: "Sentret", 163: "Hoothoot", 165: "Ledyba", 167: "Spinarak", 170: "Chinchou",
+  172: "Pichu", 173: "Cleffa", 174: "Igglybuff", 175: "Togepi", 177: "Natu", 179: "Mareep", 183: "Marill",
+  185: "Sudowoodo", 187: "Hoppip", 190: "Aipom", 191: "Sunkern", 193: "Yanma", 194: "Wooper", 198: "Murkrow",
+  200: "Misdreavus", 201: "Unown", 202: "Wobbuffet", 203: "Girafarig", 204: "Pineco", 206: "Dunsparce",
+  207: "Gligar", 208: "Steelix", 209: "Snubbull", 211: "Qwilfish", 212: "Scizor", 213: "Shuckle",
+  214: "Heracross", 215: "Sneasel", 216: "Teddiursa", 218: "Slugma", 220: "Swinub", 222: "Corsola",
+  223: "Remoraid", 225: "Delibird", 226: "Mantine", 227: "Skarmory", 228: "Houndour", 231: "Phanpy",
+  233: "Porygon2", 234: "Stantler", 235: "Smeargle", 236: "Tyrogue", 238: "Smoochum", 239: "Elekid",
+  240: "Magby", 241: "Miltank", 242: "Blissey", 243: "Raikou", 244: "Entei", 245: "Suicune", 246: "Larvitar",
+  249: "Lugia", 250: "Ho-Oh", 251: "Celebi"
 };
 
 class SaveReader {
@@ -41,29 +76,23 @@ class SaveReader {
   }
 
   getUint16(offset) {
-    return this.view.getUint16(offset, true); // Little-Endian
+    return this.view.getUint16(offset, true);
   }
 
   getUint32(offset) {
-    return this.view.getUint32(offset, true); // Little-Endian
+    return this.view.getUint32(offset, true);
   }
 
-  /**
-   * Decodes Gen 4 string up to max length in bytes (16 bytes = 8 u16 characters)
-   */
-  getString(offset, maxLengthBytes = 16) {
+  getString(offset, maxLengthBytes) {
     let result = '';
     for (let i = 0; i < maxLengthBytes; i += 2) {
       const charCode = this.getUint16(offset + i);
-      
       if (charCode === 0xFFFF || charCode === 0x0000) break;
 
       if (GEN4_CHAR_MAP[charCode] !== undefined) {
         result += GEN4_CHAR_MAP[charCode];
-      } else if (charCode >= 0x012B && charCode <= 0x0144) {
-        result += String.fromCharCode(charCode - 0x012B + 65); // Upper ASCII
-      } else if (charCode >= 0x0145 && charCode <= 0x015E) {
-        result += String.fromCharCode(charCode - 0x0145 + 97); // Lower ASCII
+      } else if (charCode <= 0x007F) {
+        result += String.fromCharCode(charCode);
       } else {
         result += '?';
       }
@@ -71,9 +100,6 @@ class SaveReader {
     return result;
   }
 
-  /**
-   * Determines active Gen 4 save block (Block A or Block B) based on Save Counter
-   */
   getGen4ActiveBlock() {
     const BLOCK_A_FOOTER = 0xC0F0;
     const BLOCK_B_FOOTER = 0x4C0F0;
@@ -96,12 +122,8 @@ class SaveReader {
     };
   }
 
-  /**
-   * Parses save file header details
-   */
   parseHeader() {
-    const NDS_SAV_SIZE = 524288; // 512KB
-    
+    const NDS_SAV_SIZE = 524288;
     if (this.byteLength < NDS_SAV_SIZE) {
       throw new Error(`Invalid file size: ${this.byteLength} bytes. Expected at least 512KB.`);
     }
@@ -117,14 +139,11 @@ class SaveReader {
     };
   }
 
-  /**
-   * Extracts Trainer Information using verified offsets
-   */
   parseTrainerInfo(baseOffset) {
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0064; // 16 bytes
-    const TID_OFFSET          = baseOffset + 0x0074; // 2 bytes
-    const SID_OFFSET          = baseOffset + 0x0076; // 2 bytes
-    const MONEY_OFFSET        = baseOffset + 0x0078; // 4 bytes
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    const TID_OFFSET = baseOffset + 0x0074;
+    const SID_OFFSET = baseOffset + 0x0076;
+    const MONEY_OFFSET = baseOffset + 0x0078;
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
@@ -136,13 +155,10 @@ class SaveReader {
 
   /**
    * Decrypts and unshuffles a 236-byte Gen 4 Party Pokémon structure
-   * @param {number} pokemonOffset - Starting byte offset of the Pokémon in save buffer
-   * @returns {Uint8Array} Decrypted 236-byte Pokémon buffer
    */
   decryptPokemon(pokemonOffset) {
     const decrypted = new Uint8Array(236);
 
-    // Copy unencrypted bytes: Header (0x00-0x07) and Party Stats (0x88-0xEB)
     for (let i = 0; i < 8; i++) {
       decrypted[i] = this.getUint8(pokemonOffset + i);
     }
@@ -153,7 +169,6 @@ class SaveReader {
     const pid = this.getUint32(pokemonOffset);
     const checksum = this.getUint16(pokemonOffset + 0x06);
 
-    // 1. LCRNG Decryption for core 128 bytes (offsets 0x08 to 0x87)
     let seed = checksum;
     const decryptedBlock = new Uint8Array(128);
     const blockView = new DataView(decryptedBlock.buffer);
@@ -165,7 +180,6 @@ class SaveReader {
       blockView.setUint16(i * 2, rawWord ^ key, true);
     }
 
-    // 2. Unshuffling 4 sub-blocks (32 bytes each) based on PID
     const blockOrders = [
       [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1],
       [0, 3, 1, 2], [0, 3, 2, 1], [1, 0, 2, 3], [1, 0, 3, 2],
@@ -178,7 +192,6 @@ class SaveReader {
     const orderIndex = Math.floor((pid >>> 13) % 24);
     const order = blockOrders[orderIndex];
 
-    // Rearrange blocks A (0), B (1), C (2), D (3) into canonical order inside decrypted array
     for (let currentPos = 0; currentPos < 4; currentPos++) {
       const blockId = order[currentPos];
       const srcStart = currentPos * 32;
@@ -192,9 +205,6 @@ class SaveReader {
     return decrypted;
   }
 
-  /**
-   * Reads string from decrypted byte array
-   */
   getDecryptedString(decryptedArray, offset, maxLengthBytes = 22) {
     const view = new DataView(decryptedArray.buffer);
     let result = '';
@@ -204,10 +214,8 @@ class SaveReader {
 
       if (GEN4_CHAR_MAP[charCode] !== undefined) {
         result += GEN4_CHAR_MAP[charCode];
-      } else if (charCode >= 0x012B && charCode <= 0x0144) {
-        result += String.fromCharCode(charCode - 0x012B + 65);
-      } else if (charCode >= 0x0145 && charCode <= 0x015E) {
-        result += String.fromCharCode(charCode - 0x0145 + 97);
+      } else if (charCode <= 0x007F) {
+        result += String.fromCharCode(charCode);
       } else {
         result += '?';
       }
@@ -216,37 +224,60 @@ class SaveReader {
   }
 
   /**
-   * Extracts party Pokémon count and decrypts each slot
+   * Auto-detects party count/data offsets and extracts party Pokémon
    */
   parseParty(baseOffset) {
-    const PARTY_COUNT_OFFSET = baseOffset + 0x0098;
-    const PARTY_DATA_OFFSET  = baseOffset + 0x009C;
+    const candidateOffsets = [0x00A0, 0x00A4, 0x009C, 0x0098];
+    let partyCountOffset = null;
+    let partyDataOffset = null;
 
-    const count = Math.min(this.getUint32(PARTY_COUNT_OFFSET), 6);
+    for (const candidate of candidateOffsets) {
+      const count = this.getUint32(baseOffset + candidate);
+      if (count >= 1 && count <= 6) {
+        const testDataOffset = baseOffset + candidate + 4;
+        const testLevel = this.getUint8(testDataOffset + 0x8C);
+        if (testLevel >= 1 && testLevel <= 100) {
+          partyCountOffset = baseOffset + candidate;
+          partyDataOffset = testDataOffset;
+          break;
+        }
+      }
+    }
+
+    if (!partyCountOffset) {
+      partyCountOffset = baseOffset + 0x00A0;
+      partyDataOffset = baseOffset + 0x00A4;
+    }
+
+    const count = Math.min(this.getUint32(partyCountOffset), 6);
     const party = [];
 
     for (let i = 0; i < count; i++) {
-      const slotOffset = PARTY_DATA_OFFSET + (i * 236);
+      const slotOffset = partyDataOffset + (i * 236);
       const decrypted = this.decryptPokemon(slotOffset);
       const view = new DataView(decrypted.buffer);
 
+      const pid = view.getUint32(0x00, true);
       const speciesId = view.getUint16(0x08, true);
-      const nickname = this.getDecryptedString(decrypted, 0x48, 22) || `Species #${speciesId}`;
+      const speciesName = SPECIES_NAMES[speciesId] || `Species #${speciesId}`;
+      const nickname = this.getDecryptedString(decrypted, 0x48, 22) || speciesName;
       const level = view.getUint8(0x8C);
       const currentHP = view.getUint16(0x8E, true);
       const maxHP = view.getUint16(0x90, true);
+      const nature = NATURES[pid % 25] || "Unknown";
 
       party.push({
         slot: i + 1,
         speciesId,
+        speciesName,
         nickname,
         level,
         currentHP,
-        maxHP
+        maxHP,
+        nature
       });
     }
 
     return party;
   }
-
 }

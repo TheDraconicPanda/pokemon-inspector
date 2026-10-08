@@ -53,11 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const partyCardsHTML = party.map(pkm => `
       <div class="card" style="margin-bottom: 12px;">
-        <h3>Slot ${pkm.slot}: ${pkm.nickname}</h3>
+        <h3>Slot ${pkm.slot}: ${pkm.speciesName} ${pkm.nickname !== pkm.speciesName ? `("${pkm.nickname}")` : ''}</h3>
         <ul>
-          <li><strong>Species ID:</strong> <span>#${pkm.speciesId}</span></li>
           <li><strong>Level:</strong> <span>Lv. ${pkm.level}</span></li>
+          <li><strong>Nature:</strong> <span>${pkm.nature}</span></li>
           <li><strong>HP:</strong> <span>${pkm.currentHP} / ${pkm.maxHP}</span></li>
+          <li><strong>Species ID:</strong> <span>#${pkm.speciesId}</span></li>
         </ul>
       </div>
     `).join('');
