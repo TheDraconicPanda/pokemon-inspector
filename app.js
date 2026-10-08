@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input');
   const outputContainer = document.getElementById('output');
 
-  // Drag and drop event handling
   ['dragenter', 'dragover'].forEach(eventName => {
     dropZone.addEventListener(eventName, (e) => {
       e.preventDefault();
@@ -46,10 +45,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveReader = new SaveReader(arrayBuffer);
     const header = saveReader.parseHeader();
     const trainer = saveReader.parseTrainerInfo(header.activeBlockOffset);
+    const party = saveReader.parseParty(header.activeBlockOffset);
 
     const formattedTID = String(trainer.tid).padStart(5, '0');
     const formattedSID = String(trainer.sid).padStart(5, '0');
     const formattedMoney = trainer.money.toLocaleString();
+
+    const partyCardsHTML = party.map(pkm => `
+      <div class="card" style="margin-bottom: 12px;">
+        <h3>Slot ${pkm.slot}: ${pkm.nickname}</h3>
+        <ul>
+          <li><strong>Species ID:</strong> <span>#${pkm.speciesId}</span></li>
+          <li><strong>Level:</strong> <span>Lv. ${pkm.level}</span></li>
+          <li><strong>HP:</strong> <span>${pkm.currentHP} / ${pkm.maxHP}</span></li>
+        </ul>
+      </div>
+    `).join('');
 
     outputContainer.innerHTML = `
       <div class="card" style="margin-bottom: 16px;">
@@ -62,10 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
         </ul>
       </div>
 
+      <div style="margin-bottom: 16px;">
+        <h2 style="margin-bottom: 12px;">Party Pokémon (${party.length})</h2>
+        ${partyCardsHTML || '<div class="card"><p>No Pokémon found in party.</p></div>'}
+      </div>
+
       <div class="card">
         <h3>Save File Details</h3>
         <ul>
-          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer Detected)' : '.sav (Standard Raw)'}</span></li>
+          <li><strong>File Format:</strong> <span>${header.isDsv ? '.dsv (Emulator Footer)' : '.sav (Standard Raw)'}</span></li>
           <li><strong>Active Block:</strong> <span>${header.activeBlockName}</span></li>
           <li><strong>Save Counter:</strong> <span>${header.saveCount}</span></li>
         </ul>

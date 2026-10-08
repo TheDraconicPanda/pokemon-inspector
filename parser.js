@@ -192,4 +192,61 @@ class SaveReader {
     return decrypted;
   }
 
+  /**
+   * Reads string from decrypted byte array
+   */
+  getDecryptedString(decryptedArray, offset, maxLengthBytes = 22) {
+    const view = new DataView(decryptedArray.buffer);
+    let result = '';
+    for (let i = 0; i < maxLengthBytes; i += 2) {
+      const charCode = view.getUint16(offset + i, true);
+      if (charCode === 0xFFFF || charCode === 0x0000) break;
+
+      if (GEN4_CHAR_MAP[charCode] !== undefined) {
+        result += GEN4_CHAR_MAP[charCode];
+      } else if (charCode >= 0x012B && charCode <= 0x0144) {
+        result += String.fromCharCode(charCode - 0x012B + 65);
+      } else if (charCode >= 0x0145 && charCode <= 0x015E) {
+        result += String.fromCharCode(charCode - 0x0145 + 97);
+      } else {
+        result += '?';
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Extracts party Pokémon count and decrypts each slot
+   */
+  parseParty(baseOffset) {
+    const PARTY_COUNT_OFFSET = baseOffset + 0x0098;
+    const PARTY_DATA_OFFSET  = baseOffset + 0x009C;
+
+    const count = Math.min(this.getUint32(PARTY_COUNT_OFFSET), 6);
+    const party = [];
+
+    for (let i = 0; i < count; i++) {
+      const slotOffset = PARTY_DATA_OFFSET + (i * 236);
+      const decrypted = this.decryptPokemon(slotOffset);
+      const view = new DataView(decrypted.buffer);
+
+      const speciesId = view.getUint16(0x08, true);
+      const nickname = this.getDecryptedString(decrypted, 0x48, 22) || `Species #${speciesId}`;
+      const level = view.getUint8(0x8C);
+      const currentHP = view.getUint16(0x8E, true);
+      const maxHP = view.getUint16(0x90, true);
+
+      party.push({
+        slot: i + 1,
+        speciesId,
+        nickname,
+        level,
+        currentHP,
+        maxHP
+      });
+    }
+
+    return party;
+  }
+
 }
