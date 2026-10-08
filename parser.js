@@ -133,9 +133,63 @@ class SaveReader {
       money: this.getUint32(MONEY_OFFSET)
     };
   }
-    //const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
-    //const TRAINER_NAME_OFFSET = baseOffset + 0x0080;
-    //const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
-    //const TRAINER_NAME_OFFSET = baseOffset + 0x0068;
-    //name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
+
+  /**
+   * Decrypts and unshuffles a 236-byte Gen 4 Party Pokémon structure
+   * @param {number} pokemonOffset - Starting byte offset of the Pokémon in save buffer
+   * @returns {Uint8Array} Decrypted 236-byte Pokémon buffer
+   */
+  decryptPokemon(pokemonOffset) {
+    const decrypted = new Uint8Array(236);
+
+    // Copy unencrypted bytes: Header (0x00-0x07) and Party Stats (0x88-0xEB)
+    for (let i = 0; i < 8; i++) {
+      decrypted[i] = this.getUint8(pokemonOffset + i);
+    }
+    for (let i = 136; i < 236; i++) {
+      decrypted[i] = this.getUint8(pokemonOffset + i);
+    }
+
+    const pid = this.getUint32(pokemonOffset);
+    const checksum = this.getUint16(pokemonOffset + 0x06);
+
+    // 1. LCRNG Decryption for core 128 bytes (offsets 0x08 to 0x87)
+    let seed = checksum;
+    const decryptedBlock = new Uint8Array(128);
+    const blockView = new DataView(decryptedBlock.buffer);
+
+    for (let i = 0; i < 64; i++) {
+      const rawWord = this.getUint16(pokemonOffset + 0x08 + (i * 2));
+      seed = (Math.imul(seed, 0x41C64E6D) + 0x000060B9) >>> 0;
+      const key = seed >>> 16;
+      blockView.setUint16(i * 2, rawWord ^ key, true);
+    }
+
+    // 2. Unshuffling 4 sub-blocks (32 bytes each) based on PID
+    const blockOrders = [
+      [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1],
+      [0, 3, 1, 2], [0, 3, 2, 1], [1, 0, 2, 3], [1, 0, 3, 2],
+      [1, 2, 0, 3], [1, 2, 3, 0], [1, 3, 0, 2], [1, 3, 2, 0],
+      [2, 0, 1, 3], [2, 0, 3, 1], [2, 1, 0, 3], [2, 1, 3, 0],
+      [2, 3, 0, 1], [2, 3, 1, 0], [3, 0, 1, 2], [3, 0, 2, 1],
+      [3, 1, 0, 2], [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]
+    ];
+
+    const orderIndex = Math.floor((pid >>> 13) % 24);
+    const order = blockOrders[orderIndex];
+
+    // Rearrange blocks A (0), B (1), C (2), D (3) into canonical order inside decrypted array
+    for (let currentPos = 0; currentPos < 4; currentPos++) {
+      const blockId = order[currentPos];
+      const srcStart = currentPos * 32;
+      const destStart = 8 + (blockId * 32);
+
+      for (let byteIdx = 0; byteIdx < 32; byteIdx++) {
+        decrypted[destStart + byteIdx] = decryptedBlock[srcStart + byteIdx];
+      }
+    }
+
+    return decrypted;
+  }
+
 }
