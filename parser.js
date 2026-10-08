@@ -2,30 +2,30 @@
  * Binary Save Reader for NDS Save Files
  */
 
-// Gen 4 Character Table Mapping
+// PKHeX Gen 4 Character Table Mapping
 const GEN4_CHAR_MAP = {
-  // Numbers
-  0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
-  0x0113: '5', 0x0114: '6', 0x0115: '7', 0x0116: '8', 0x0117: '9',
+  // Numbers (0x011B - 0x0124)
+  0x011B: '0', 0x011C: '1', 0x011D: '2', 0x011E: '3', 0x011F: '4',
+  0x0120: '5', 0x0121: '6', 0x0122: '7', 0x0123: '8', 0x0124: '9',
 
-  // Uppercase Letters A-Z
-  0x0121: 'A', 0x0122: 'B', 0x0123: 'C', 0x0124: 'D', 0x0125: 'E',
-  0x0126: 'F', 0x0127: 'G', 0x0128: 'H', 0x0129: 'I', 0x012A: 'J',
-  0x012B: 'K', 0x012C: 'L', 0x012E: 'M', 0x012F: 'N', 0x0130: 'O',
-  0x0131: 'P', 0x0132: 'Q', 0x0133: 'R', 0x0134: 'S', 0x0135: 'T',
-  0x0136: 'U', 0x0137: 'V', 0x0138: 'W', 0x0139: 'X', 0x013A: 'Y',
-  0x013B: 'Z',
+  // Uppercase Letters A-Z (0x012B - 0x0144)
+  0x012B: 'A', 0x012C: 'B', 0x012D: 'C', 0x012E: 'D', 0x012F: 'E',
+  0x0130: 'F', 0x0131: 'G', 0x0132: 'H', 0x0133: 'I', 0x0134: 'J',
+  0x0135: 'K', 0x0136: 'L', 0x0137: 'M', 0x0138: 'N', 0x0139: 'O',
+  0x013A: 'P', 0x013B: 'Q', 0x013C: 'R', 0x013D: 'S', 0x013E: 'T',
+  0x013F: 'U', 0x0140: 'V', 0x0141: 'W', 0x0142: 'X', 0x0143: 'Y',
+  0x0144: 'Z',
 
-  // Lowercase Letters a-z
-  0x013C: 'a', 0x013D: 'b', 0x013E: 'c', 0x013F: 'd', 0x0140: 'e',
-  0x0141: 'f', 0x0142: 'g', 0x0143: 'h', 0x0144: 'i', 0x0145: 'j',
-  0x0146: 'k', 0x0147: 'l', 0x0148: 'm', 0x0149: 'n', 0x014A: 'o',
-  0x014B: 'p', 0x014C: 'q', 0x014D: 'r', 0x014E: 's', 0x014F: 't',
-  0x0150: 'u', 0x0151: 'v', 0x0152: 'w', 0x0153: 'x', 0x0154: 'y',
-  0x0155: 'z',
+  // Lowercase Letters a-z (0x0145 - 0x015E)
+  0x0145: 'a', 0x0146: 'b', 0x0147: 'c', 0x0148: 'd', 0x0149: 'e',
+  0x014A: 'f', 0x014B: 'g', 0x014C: 'h', 0x014D: 'i', 0x014E: 'j',
+  0x014F: 'k', 0x0150: 'l', 0x0151: 'm', 0x0152: 'n', 0x0153: 'o',
+  0x0154: 'p', 0x0155: 'q', 0x0156: 'r', 0x0157: 's', 0x0158: 't',
+  0x0159: 'u', 0x015A: 'v', 0x015B: 'w', 0x015C: 'x', 0x015D: 'y',
+  0x015E: 'z',
 
-  // Special Characters
-  0x0000: '',  0x0001: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
+  // Special / Control Characters
+  0x0000: '',  0x0100: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
   0x01A8: '?', 0x01A9: '!', 0x01AB: '-', 0x01AC: '.', 0x01AD: '…'
 };
 
@@ -49,19 +49,21 @@ class SaveReader {
   }
 
   /**
-   * Decodes Gen 4 string up to max characters
+   * Decodes Gen 4 string up to max length in bytes (16 bytes = 8 u16 characters)
    */
-  getString(offset, maxChars = 8) {
+  getString(offset, maxLengthBytes = 16) {
     let result = '';
-    for (let i = 0; i < maxChars; i++) {
-      const charCode = this.getUint16(offset + (i * 2));
+    for (let i = 0; i < maxLengthBytes; i += 2) {
+      const charCode = this.getUint16(offset + i);
       
       if (charCode === 0xFFFF || charCode === 0x0000) break;
 
       if (GEN4_CHAR_MAP[charCode] !== undefined) {
         result += GEN4_CHAR_MAP[charCode];
-      } else if (charCode <= 0x007F) {
-        result += String.fromCharCode(charCode);
+      } else if (charCode >= 0x012B && charCode <= 0x0144) {
+        result += String.fromCharCode(charCode - 0x012B + 65); // Upper ASCII
+      } else if (charCode >= 0x0145 && charCode <= 0x015E) {
+        result += String.fromCharCode(charCode - 0x0145 + 97); // Lower ASCII
       } else {
         result += '?';
       }
@@ -116,27 +118,13 @@ class SaveReader {
   }
 
   /**
-   * Extracts Trainer Information from save block
-   */
-  /**
-   * Extracts Trainer Information and scans for Trainer Name offset
+   * Extracts Trainer Information using verified offsets
    */
   parseTrainerInfo(baseOffset) {
-    // 1. Scan for the character 'M' (0x012E) across the header block
-    console.log("=== SCANNING FOR TRAINER NAME 'Mando' ===");
-    for (let offset = 0x0000; offset < 0x0100; offset += 2) {
-      const code = this.getUint16(baseOffset + offset);
-      if (code === 0x012E) { // 0x012E = 'M'
-        const possibleName = this.getString(baseOffset + offset, 8);
-        console.log(`FOUND 'M' AT RELATIVE OFFSET 0x${offset.toString(16).toUpperCase().padStart(4, '0')} -> Decodes to: "${possibleName}"`);
-      }
-    }
-
-    // Default offsets for TID, SID, Money
-    const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
-    const TID_OFFSET = baseOffset + 0x0074;
-    const SID_OFFSET = baseOffset + 0x0076;
-    const MONEY_OFFSET = baseOffset + 0x0078;
+    const TRAINER_NAME_OFFSET = baseOffset + 0x0064; // 16 bytes
+    const TID_OFFSET          = baseOffset + 0x0074; // 2 bytes
+    const SID_OFFSET          = baseOffset + 0x0076; // 2 bytes
+    const MONEY_OFFSET        = baseOffset + 0x0078; // 4 bytes
 
     return {
       name: this.getString(TRAINER_NAME_OFFSET, 16) || "UNKNOWN",
@@ -145,4 +133,9 @@ class SaveReader {
       money: this.getUint32(MONEY_OFFSET)
     };
   }
+    //const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    //const TRAINER_NAME_OFFSET = baseOffset + 0x0080;
+    //const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
+    //const TRAINER_NAME_OFFSET = baseOffset + 0x0068;
+    //name: this.getString(TRAINER_NAME_OFFSET, 8) || "UNKNOWN",
 }
