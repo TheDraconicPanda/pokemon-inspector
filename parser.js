@@ -1,35 +1,37 @@
 /**
- * Binary Save Reader for NDS Save Files
+ * Binary Save Reader for NDS Save Files (Gen 4 HGSS)
  */
 
 // Gen 4 Character Encoding Map (HeartGold / SoulSilver)
 const GEN4_CHAR_MAP = {
-  // Digits
-  0x010E: '0', 0x010F: '1', 0x0110: '2', 0x0111: '3', 0x0112: '4',
-  0x0113: '5', 0x0114: '6', 0x0115: '7', 0x0116: '8', 0x0117: '9',
+  // Terminate & Whitespace
+  0x0000: '', 0x0001: ' ', 0x00FE: ' ', 0x01A1: ' ',
 
-  // Uppercase Letters
-  0x0121: 'A', 0x0122: 'B', 0x0123: 'C', 0x0124: 'D', 0x0125: 'E',
-  0x0126: 'F', 0x0127: 'G', 0x0128: 'H', 0x0129: 'I', 0x012A: 'J',
-  0x012B: 'K', 0x012C: 'L', 0x012D: 'M', 0x012E: 'N', 0x012F: 'O',
-  0x0130: 'P', 0x0131: 'Q', 0x0132: 'R', 0x0133: 'S', 0x0134: 'T',
-  0x0135: 'U', 0x0136: 'V', 0x0137: 'W', 0x0138: 'X', 0x0139: 'Y',
-  0x013A: 'Z',
+  // Digits (0x011B - 0x0124)
+  0x011B: '0', 0x011C: '1', 0x011D: '2', 0x011E: '3', 0x011F: '4',
+  0x0120: '5', 0x0121: '6', 0x0122: '7', 0x0123: '8', 0x0124: '9',
 
-  // Lowercase Letters
-  0x013B: 'a', 0x013C: 'b', 0x013D: 'c', 0x013E: 'd', 0x013F: 'e',
-  0x0140: 'f', 0x0141: 'g', 0x0142: 'h', 0x0143: 'i', 0x0144: 'j',
-  0x0145: 'k', 0x0146: 'l', 0x0147: 'm', 0x0148: 'n', 0x0149: 'o',
-  0x014A: 'p', 0x014B: 'q', 0x014C: 'r', 0x014D: 's', 0x014E: 't',
-  0x014F: 'u', 0x0150: 'v', 0x0151: 'w', 0x0152: 'x', 0x0153: 'y',
-  0x0154: 'z',
+  // Uppercase Letters (0x012B - 0x0144)
+  0x012B: 'A', 0x012C: 'B', 0x012D: 'C', 0x012E: 'D', 0x012F: 'E',
+  0x0130: 'F', 0x0131: 'G', 0x0132: 'H', 0x0133: 'I', 0x0134: 'J',
+  0x0135: 'K', 0x0136: 'L', 0x0137: 'M', 0x0138: 'N', 0x0139: 'O',
+  0x013A: 'P', 0x013B: 'Q', 0x013C: 'R', 0x013D: 'S', 0x013E: 'T',
+  0x013F: 'U', 0x0140: 'V', 0x0141: 'W', 0x0142: 'X', 0x0143: 'Y',
+  0x0144: 'Z',
 
-  // Symbols & Formatting
-  0x0000: '',  0x0001: ' ', 0x01A1: ' ', 0x01A2: '♂', 0x01A3: '♀',
-  0x01A8: '?', 0x01A9: '!', 0x01AA: '/', 0x01AB: '-', 0x01AC: '.'
+  // Lowercase Letters (0x0145 - 0x015E)
+  0x0145: 'a', 0x0146: 'b', 0x0147: 'c', 0x0148: 'd', 0x0149: 'e',
+  0x014A: 'f', 0x014B: 'g', 0x014C: 'h', 0x014D: 'i', 0x014E: 'j',
+  0x014F: 'k', 0x0150: 'l', 0x0151: 'm', 0x0152: 'n', 0x0153: 'o',
+  0x0154: 'p', 0x0155: 'q', 0x0156: 'r', 0x0157: 's', 0x0158: 't',
+  0x0159: 'u', 0x015A: 'v', 0x015B: 'w', 0x015C: 'x', 0x015D: 'y',
+  0x015E: 'z',
+
+  // Symbols
+  0x01A2: '♂', 0x01A3: '♀', 0x01A8: '?', 0x01A9: '!', 0x01AA: '/', 0x01AB: '-', 0x01AC: '.'
 };
 
-// Gen 4 Nature List
+// Gen 4 Natures
 const NATURES = [
   "Hardy", "Lonely", "Brave", "Adamant", "Naughty",
   "Bold", "Docile", "Relaxed", "Impish", "Lax",
@@ -38,12 +40,12 @@ const NATURES = [
   "Calm", "Gentle", "Sassy", "Careful", "Quirky"
 ];
 
-// Gen 1-4 Species Map (Selected/Common + Indexed)
+// Gen 1-4 Species Mapping
 const SPECIES_NAMES = {
   1: "Bulbasaur", 2: "Ivysaur", 3: "Venusaur", 4: "Charmander", 5: "Charmeleon", 6: "Charizard",
   7: "Squirtle", 8: "Wartortle", 9: "Blastoise", 10: "Caterpie", 11: "Metapod", 12: "Butterfree",
   16: "Pidgey", 19: "Rattata", 25: "Pikachu", 35: "Clefairy", 37: "Vulpix", 41: "Zubat",
-  43: "Oddish", 46: "Paras", 47: "Paras", 48: "Venonat", 50: "Diglett", 52: "Meowth", 54: "Psyduck",
+  43: "Oddish", 46: "Paras", 47: "Parasect", 48: "Venonat", 50: "Diglett", 52: "Meowth", 54: "Psyduck",
   60: "Poliwag", 63: "Abra", 66: "Machop", 72: "Tentacool", 74: "Geodude", 77: "Ponyta", 79: "Slowpoke",
   81: "Magnemite", 83: "Farfetch'd", 84: "Doduo", 86: "Seel", 88: "Grimer", 90: "Shellder", 92: "Gastly",
   95: "Onix", 96: "Drowzee", 98: "Krabby", 100: "Voltorb", 102: "Exeggcute", 104: "Cubone", 108: "Lickitung",
@@ -140,6 +142,7 @@ class SaveReader {
   }
 
   parseTrainerInfo(baseOffset) {
+    // HGSS Verified Base Offsets
     const TRAINER_NAME_OFFSET = baseOffset + 0x0064;
     const TID_OFFSET = baseOffset + 0x0074;
     const SID_OFFSET = baseOffset + 0x0076;
@@ -153,22 +156,17 @@ class SaveReader {
     };
   }
 
-  /**
-   * Decrypts and unshuffles a 236-byte Gen 4 Party Pokémon structure
-   */
   decryptPokemon(pokemonOffset) {
     const decrypted = new Uint8Array(236);
 
-    for (let i = 0; i < 8; i++) {
-      decrypted[i] = this.getUint8(pokemonOffset + i);
-    }
-    for (let i = 136; i < 236; i++) {
-      decrypted[i] = this.getUint8(pokemonOffset + i);
-    }
+    // Copy unencrypted header (0x00 - 0x07) and unencrypted party stats (0x88 - 0xEB)
+    for (let i = 0; i < 8; i++) decrypted[i] = this.getUint8(pokemonOffset + i);
+    for (let i = 136; i < 236; i++) decrypted[i] = this.getUint8(pokemonOffset + i);
 
     const pid = this.getUint32(pokemonOffset);
     const checksum = this.getUint16(pokemonOffset + 0x06);
 
+    // LCRNG Decryption for 128-byte block
     let seed = checksum;
     const decryptedBlock = new Uint8Array(128);
     const blockView = new DataView(decryptedBlock.buffer);
@@ -180,6 +178,7 @@ class SaveReader {
       blockView.setUint16(i * 2, rawWord ^ key, true);
     }
 
+    // Unshuffle 4 sub-blocks (A, B, C, D)
     const blockOrders = [
       [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1],
       [0, 3, 1, 2], [0, 3, 2, 1], [1, 0, 2, 3], [1, 0, 3, 2],
@@ -223,33 +222,13 @@ class SaveReader {
     return result;
   }
 
-  /**
-   * Auto-detects party count/data offsets and extracts party Pokémon
-   */
   parseParty(baseOffset) {
-    const candidateOffsets = [0x00A0, 0x00A4, 0x009C, 0x0098];
-    let partyCountOffset = null;
-    let partyDataOffset = null;
+    // Locked HGSS Party Offsets
+    const partyCountOffset = baseOffset + 0x0098;
+    const partyDataOffset = baseOffset + 0x009C;
 
-    for (const candidate of candidateOffsets) {
-      const count = this.getUint32(baseOffset + candidate);
-      if (count >= 1 && count <= 6) {
-        const testDataOffset = baseOffset + candidate + 4;
-        const testLevel = this.getUint8(testDataOffset + 0x8C);
-        if (testLevel >= 1 && testLevel <= 100) {
-          partyCountOffset = baseOffset + candidate;
-          partyDataOffset = testDataOffset;
-          break;
-        }
-      }
-    }
-
-    if (!partyCountOffset) {
-      partyCountOffset = baseOffset + 0x00A0;
-      partyDataOffset = baseOffset + 0x00A4;
-    }
-
-    const count = Math.min(this.getUint32(partyCountOffset), 6);
+    const rawCount = this.getUint32(partyCountOffset);
+    const count = (rawCount >= 1 && rawCount <= 6) ? rawCount : 0;
     const party = [];
 
     for (let i = 0; i < count; i++) {
